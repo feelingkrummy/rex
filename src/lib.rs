@@ -1,48 +1,38 @@
 
-enum ConfigError {
-    NotEnoughArgs,
-    UnexpectedEndOfArgs,
-    FailedToParseColNum,
+pub use clap::Parser as ClapParser;
+
+#[derive(ClapParser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Cli {
+    /// Name of file to dump
+    pub file_name: String, 
+
+    #[arg(short, long, default_value_t = 8)]
+    /// Number of Columns to Print
+    pub cols: usize,
+
+    #[arg(short, long, default_value_t = 4)]
+    /// Number of Columns to Print
+    pub word_width: usize,
 }
 
-struct Config {
-    pub file_path: String,
-    pub cols: u64,
-}
+pub fn print_line(bytes: &[u8], row_num: usize, cols: usize) {
+    let remaning = cols - bytes.len();
 
-impl Config {
-    fn build(args: &Vec<String>) -> Result<Config, ConfigError> {
-        let mut config = Config{
-            cols: 8,
-            file_path: String::new(),
-        };
+    print!("{:08X} ", row_num*cols);
 
-        if args.len() < 2 {
-            return Err(ConfigError::NotEnoughArgs);
-        }
-
-        let mut args_iter = args.iter();
-    
-        while let Some(arg) = args_iter.next() {
-            match arg.as_str() {
-                "-c" => {
-                    let next_arg = args_iter.next();
-                    match next_arg {
-                        Some(col_str) => {
-                            match col_str.parse::<u64>() {
-                                Ok(col) => {
-                                    config.cols = col;
-                                }
-                                Err(_) => return Err(ConfigError::FailedToParseColNum),
-                            }
-                        }
-                        None => return Err(ConfigError::UnexpectedEndOfArgs),
-                    }
-                }
-                &_ => todo!()
-            }
-        }
-
-        return Ok(config);
+    for byte in bytes {
+        print!("{:02X} ", byte);
     }
+    for _ in 0..remaning {
+        print!("   ");
+    }
+    print!("  "); 
+    for byte in bytes {
+        match *byte as char {
+            '\n' => print!("."),
+            _ => print!("{}", *byte as char),
+        };
+    }
+    print!("\n");
 }
